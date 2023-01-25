@@ -11,6 +11,7 @@ services:
     ports:
       - '2181:2181'
     environment:
+      - ZOOKEEPER_CLIENT_PORT:2181
       - ALLOW_ANONYMOUS_LOGIN=yes
     networks:
       - app-tier
@@ -19,13 +20,19 @@ services:
     container_name: kafka
     ports:
       - "9092:9092"
+      - "9999:9999"
     environment:
       - KAFKA_BROKER_ID=1
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://192.168.56.102(ip of your machine):9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://192.168.56.102:9092
       - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
       - ALLOW_PLAINTEXT_LISTENER=yes
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_JMX_HOSTNAME=192.168.56.102
+      - KAFKA_JMX_PORT:9999
+      - KAFKA_JMX_OPTS= -Dcom.sun.management.jmxremote -Djava.rmi.server.hostname=192.168.56.102 -Dcom.sun.management.jmxremote.local.only=false -Dcom.sun.management.jmxremote.rmi.port=9999 -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false
+     # - KAFKA_LISTENERS:PLAINTEXT://:29092,PLAINTEXT_HOST://0.0.0.0:9092
+     # - KAFKA_BROKER_ID:1 
     networks:
       - app-tier
     depends_on:
@@ -37,3 +44,14 @@ services:
     networks:
       - app-tier
     entrypoint: ["run.sh"]
+  jmx-exporter:
+    image: sscaling/jmx-prometheus-exporter:latest
+    container_name: jmx-exporter
+    ports:
+      - "5556:5556"
+    environment:
+      - SERVICE_PORT:5556
+    volumes:
+      - ./config.yml:/opt/jmx_exporter/config.yml
+    networks:
+      - app-tier
